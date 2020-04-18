@@ -47,8 +47,8 @@ C = [C1;C2];
 %     subs(C,[mt,dq3,g],[mt,q3_d,g]);
 
 % state-space format.
-syms u1 u2
+syms u1
 
 % 2 DOF robot = 4 states. 
-SS = M \ (simplify([u1;u2] - C));
+SS = M \ (simplify([u1] - C));
 dx = [dq1;dq2;SS(1);SS(2)];
