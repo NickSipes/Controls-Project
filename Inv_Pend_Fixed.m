@@ -33,7 +33,8 @@ L = simplify(K-P);
 % Solve for TorqueDynamics
 % T1 = simplify(diff(L,dq1)*ddq1 - diff(L,q1)*dq1);
 % T2 = simplify(diff(L,dq2)*ddq2 - diff(L,q2)*dq2);
-Tau = TorqueDynamics(L, [q1, q2], [dq1, dq2], [ddq1, ddq2]);
+[T1,T2] = TorqueDynamics(L, [q1, q2], [dq1, dq2], [ddq1, ddq2]);
+Tau = [T1;T2];
 
 % Solve for M
 M11 = simplify(expand(T1 - subs(T1,ddq1,0))/ddq1);
