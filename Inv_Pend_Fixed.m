@@ -34,6 +34,9 @@ L = simplify(K-P);
 % T1 = simplify(diff(L,dq1)*ddq1 - diff(L,q1)*dq1);
 % T2 = simplify(diff(L,dq2)*ddq2 - diff(L,q2)*dq2);
 [T1,T2] = TorqueDynamics(L, [q1, q2], [dq1, dq2], [ddq1, ddq2]);
+
+% Lineraize the torque equations
+T1 = subs(T1, sin(q1), q1);
 Tau = [T1;T2];
 
 % Solve for M
@@ -99,5 +102,13 @@ function [T1, T2] = TorqueDynamics(L, q, dq, ddq)
     % sub back to orignial variables
     T2 = subs(temp, [temp1_q(t) temp1_dq(t) temp1_ddq(t) temp2_q(t) temp2_dq(t) temp2_ddq(t) diff(temp1_dq(t), t) diff(temp2_dq(t), t)],...
         [q(1), dq(1), ddq(1), q(2), dq(2), ddq(2), ddq(1), ddq(2) ]) - dL_q;
+
+end
+
+function motorEquations()
+% R
+
+
+    voltage = Rm*i + Ke*wm
 
 end
