@@ -8,13 +8,14 @@ clear all
 %% Kinetic and Potential Energies
 % q1 -> body angle
 % q2 -> wheel angle
-syms m_wheel l_body q1 q2 dq1 dq2 ddq1 ddq2 g r1 r2
+syms m_body m_wheel l_body q1 q2 dq1 dq2 ddq1 ddq2 g r1 r2...
+    l_originToBodyCM l_originToWheelCM I_Body I_WheelRotation
 
-I_wheel_rotation = 0.5 * m_wheel * (r1^2 + r2^2);
-I_body = m_wheel * l_body^2;
+%I_WheelRotation = 0.5 * m_wheel * (r1^2 + r2^2);
+%I_Body = m_wheel * l_originToBodyCM^2;
 
-P = m_wheel * g * l_body * sind(q1);
-K = 0.5 * I_wheel_rotation * dq2^2 + 0.5*I_body*dq1^2;
+P = (m_body*l_originToBodyCM + m_wheel*l_originToWheelCM)*g*cosd(q1);
+K = 0.5*(m_body*l_originToBodyCM^2 + m_wheel*l_originToWheelCM^2 + I_Body + I_WheelRotation)*dq1^2 + I_WheelRotation*dq1*dq2 + 0.5*I_WheelRotation*dq2^2;
 
 %% Lagrange Equation
 L = simplify(K-P);
@@ -52,3 +53,5 @@ syms u1
 % 2 DOF robot = 4 states. 
 SS = M \ (simplify([u1] - C));
 dx = [dq1;dq2;SS(1);SS(2)];
+
+
