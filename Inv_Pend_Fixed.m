@@ -8,15 +8,6 @@ clear all
 %% Kinetic and Potential Energies
 % q1 -> body angle
 % q2 -> wheel angle
-% syms m_body m_wheel l_body q1 q2 dq1 dq2 ddq1 ddq2 g r1 r2...
-%     l_originToBodyCM l_originToWheelCM I_Body I_WheelRotation
-% 
-% %I_WheelRotation = 0.5 * m_wheel * (r1^2 + r2^2);
-% %I_Body = m_wheel * l_originToBodyCM^2;
-% 
-% P = (m_body*l_originToBodyCM + m_wheel*l_originToWheelCM)*g*cos(q1);
-% K = 0.5*(m_body*l_originToBodyCM^2 + m_wheel*l_originToWheelCM^2 + I_Body + I_WheelRotation)*dq1^2 + I_WheelRotation*dq1*dq2 + 0.5*I_WheelRotation*dq2^2;
-
 syms m_body m_wheel l_body q1 q2 dq1 dq2 ddq1 ddq2 g r1 r2...
     l_originToBodyCM l_originToWheelCM I_Body I_WheelRotation
 
@@ -65,7 +56,7 @@ syms u1
 
 % 2 DOF robot = 4 states. 
 SS = M \ (simplify([u1] - C));
-dx = [dq1;dq2;SS(1);SS(2)];
+dx = [dq1;SS(1);dq2;SS(2)];
 
 function [T1, T2] = TorqueDynamics(L, q, dq, ddq)
 
@@ -102,13 +93,5 @@ function [T1, T2] = TorqueDynamics(L, q, dq, ddq)
     % sub back to orignial variables
     T2 = subs(temp, [temp1_q(t) temp1_dq(t) temp1_ddq(t) temp2_q(t) temp2_dq(t) temp2_ddq(t) diff(temp1_dq(t), t) diff(temp2_dq(t), t)],...
         [q(1), dq(1), ddq(1), q(2), dq(2), ddq(2), ddq(1), ddq(2) ]) - dL_q;
-
-end
-
-function motorEquations()
-% R
-
-
-    voltage = Rm*i + Ke*wm
 
 end
