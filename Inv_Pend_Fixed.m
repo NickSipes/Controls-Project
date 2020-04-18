@@ -13,11 +13,11 @@ syms m_wheel l_body q1 q2 dq1 dq2 ddq1 ddq2 g r1 r2
 I_wheel_rotation = 0.5 * m_wheel * (r1^2 + r2^2);
 I_body = m_wheel * l_body^2;
 
-U = m_wheel * g * l_body * sind(q1);
-T = 0.5 * I_wheel_rotation * dq2^2 + 0.5*I_body*dq1^2;
+P = m_wheel * g * l_body * sind(q1);
+K = 0.5 * I_wheel_rotation * dq2^2 + 0.5*I_body*dq1^2;
 
 %% Lagrange Equation
-L = simplify(T-U);
+L = simplify(K-P);
 
 %% Derive the dynamics
 % Solve for TorqueDynam
