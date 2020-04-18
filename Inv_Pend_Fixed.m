@@ -8,23 +8,32 @@ clear all
 %% Kinetic and Potential Energies
 % q1 -> body angle
 % q2 -> wheel angle
+% syms m_body m_wheel l_body q1 q2 dq1 dq2 ddq1 ddq2 g r1 r2...
+%     l_originToBodyCM l_originToWheelCM I_Body I_WheelRotation
+% 
+% %I_WheelRotation = 0.5 * m_wheel * (r1^2 + r2^2);
+% %I_Body = m_wheel * l_originToBodyCM^2;
+% 
+% P = (m_body*l_originToBodyCM + m_wheel*l_originToWheelCM)*g*cos(q1);
+% K = 0.5*(m_body*l_originToBodyCM^2 + m_wheel*l_originToWheelCM^2 + I_Body + I_WheelRotation)*dq1^2 + I_WheelRotation*dq1*dq2 + 0.5*I_WheelRotation*dq2^2;
+
 syms m_body m_wheel l_body q1 q2 dq1 dq2 ddq1 ddq2 g r1 r2...
     l_originToBodyCM l_originToWheelCM I_Body I_WheelRotation
 
 %I_WheelRotation = 0.5 * m_wheel * (r1^2 + r2^2);
 %I_Body = m_wheel * l_originToBodyCM^2;
 
-P = (m_body*l_originToBodyCM + m_wheel*l_originToWheelCM)*g*cosd(q1);
+P = (m_body*l_originToBodyCM + m_wheel*l_originToWheelCM)*g*cos(q1);
 K = 0.5*(m_body*l_originToBodyCM^2 + m_wheel*l_originToWheelCM^2 + I_Body + I_WheelRotation)*dq1^2 + I_WheelRotation*dq1*dq2 + 0.5*I_WheelRotation*dq2^2;
 
 %% Lagrange Equation
 L = simplify(K-P);
 
 %% Derive the dynamics
-% Solve for TorqueDynam
-T1 = simplify(diff(L,dq1)*ddq1 - diff(L,q1)*dq1);
-T2 = simplify(diff(L,dq2)*ddq2 - diff(L,q2)*dq2);
-Tau = [T1;T2];
+% Solve for TorqueDynamics
+% T1 = simplify(diff(L,dq1)*ddq1 - diff(L,q1)*dq1);
+% T2 = simplify(diff(L,dq2)*ddq2 - diff(L,q2)*dq2);
+Tau = TorqueDynamics(L, [q1, q2], [dq1, dq2], [ddq1, ddq2]);
 
 % Solve for M
 M11 = simplify(expand(T1 - subs(T1,ddq1,0))/ddq1);
@@ -54,4 +63,40 @@ syms u1
 SS = M \ (simplify([u1] - C));
 dx = [dq1;dq2;SS(1);SS(2)];
 
+function [T1, T2] = TorqueDynamics(L, q, dq, ddq)
 
+    % Take parital derivatives of q1
+    dL_dq = diff(L, dq(1));
+    dL_q = diff(L, q(1));
+
+    % Sub variables that are funcitons of time
+    syms temp1_q(t) temp1_dq(t) temp1_ddq(t) temp2_q(t) temp2_dq(t) temp2_ddq(t)
+    temp = subs(dL_dq, [q(1), dq(1), ddq(1), q(2), dq(2), ddq(2)],...
+        [temp1_q(t) temp1_dq(t) temp1_ddq(t) temp2_q(t) temp2_dq(t) temp2_ddq(t)]);
+    
+
+    % Take time derivative
+    temp = diff(temp, t);
+    
+    % sub back to orignial variables
+    T1 = subs(temp, [temp1_q(t) temp1_dq(t) temp1_ddq(t) temp2_q(t) temp2_dq(t) temp2_ddq(t) diff(temp1_dq(t), t) diff(temp2_dq(t), t)],...
+        [q(1), dq(1), ddq(1), q(2), dq(2), ddq(2), ddq(1), ddq(2) ]) - dL_q;
+    
+    % Take parital derivatives of q1
+    dL_dq = diff(L, dq(2));
+    dL_q = diff(L, q(2));
+
+    % Sub variables that are funcitons of time
+    syms temp1_q(t) temp1_dq(t) temp1_ddq(t) temp2_q(t) temp2_dq(t) temp2_ddq(t)
+    temp = subs(dL_dq, [q(1), dq(1), ddq(1), q(2), dq(2), ddq(2)],...
+        [temp1_q(t) temp1_dq(t) temp1_ddq(t) temp2_q(t) temp2_dq(t) temp2_ddq(t)]);
+    
+
+    % Take time derivative
+    temp = diff(temp, t);
+    
+    % sub back to orignial variables
+    T2 = subs(temp, [temp1_q(t) temp1_dq(t) temp1_ddq(t) temp2_q(t) temp2_dq(t) temp2_ddq(t) diff(temp1_dq(t), t) diff(temp2_dq(t), t)],...
+        [q(1), dq(1), ddq(1), q(2), dq(2), ddq(2), ddq(1), ddq(2) ]) - dL_q;
+
+end
