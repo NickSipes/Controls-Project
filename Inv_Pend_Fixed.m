@@ -52,11 +52,3 @@ syms u1 u2
 % 2 DOF robot = 4 states. 
 SS = M \ (simplify([u1;u2] - C));
 dx = [dq1;dq2;SS(1);SS(2)];
-
-function [Transform] = DH(theta,d,a,alpha)
-
-Transform = [cos(theta) -sin(theta)*cos(alpha) sin(theta)*sin(alpha) a*cos(theta);
-    sin(theta) cos(theta)*cos(alpha) -cos(theta)*sin(alpha) a*sin(theta);
-    0 sin(alpha) cos(alpha) d;
-    0 0 0 1];
-end
