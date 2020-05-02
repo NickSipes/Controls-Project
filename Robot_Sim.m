@@ -10,7 +10,7 @@ torque=[];
 ee_pos = [];
 eepos_error = [];
 % Parameters
-tf = 0.311;
+tf = 10;
 
 % Get the M C and G matricies
 [M,C,G] = getDynamicModel();
@@ -132,13 +132,14 @@ eepos_error = [eepos_error ee_error];
 [M,C,G] = dynamicModelResults(x,M,C,G);
 invM = inv(M);
 invMc = invM*C;
+invMg = invM*G;
 
 % Control Law
 % PD plus Feed Forward (point to point)
 xd = [q1_des; q2_des; 0; 0];
 [Md, Cd, Gd] = dynamicModelResults(xd,M,C,G);
 tau = PDplusFeedforward(theta_d, dtheta_d, ddtheta_d, current_thetas,...
-                        current_vel, Md, Cd, Gd);
+                        current_vel, Md, Cd);
 % Record Data
 torque = [torque tau];
 
@@ -146,16 +147,16 @@ torque = [torque tau];
 dx = zeros(4,1);
 dx(1) = x(3); % dq1 
 dx(2) = x(4); % dq2
-dx(3:4) = -invMc .* x(3:4) + invM * tau;
+dx(3:4) = -invMc .* x(3:4) + invM * tau - invMg; % No gravity compensation
 disp(t)
 end
 
 % Control law for our robot
-function tau = PDplusFeedforward(theta_d, dtheta_d, ddtheta_d, theta, dtheta, Mmatd, Cmatd, Gmatd)
+function tau = PDplusFeedforward(theta_d, dtheta_d, ddtheta_d, theta, dtheta, Mmatd, Cmatd)
      % Gain Matricies
-     Kp = [0 0;
+     Kp = [100 0;
            0 0];
-     Kv = [0 0;
+     Kv = [10 0;
            0 0];
      
      % position error
@@ -165,7 +166,13 @@ function tau = PDplusFeedforward(theta_d, dtheta_d, ddtheta_d, theta, dtheta, Mm
      de = dtheta_d - dtheta;
      
      % Controller output torque
-     tau = double((Kp*e + Kv*de) + Cmatd.*dtheta_d + Mmatd*ddtheta_d - Gmatd.*theta);
+     tau = double((Kp*e + Kv*de) + Cmatd.*dtheta_d + Mmatd*ddtheta_d);
+end
+
+% This function takes the desired q1 torque from the PDplusFeedforward
+% control law and calculates what torque needs to be applied to the
+% reaction 
+function reactionWheelControlLaw()
 end
 
 % Updated
@@ -301,7 +308,7 @@ function [M,C,G] = getRobotParams(M,C,G)
     % (I made these physical values up[N.Sipes-4/18/2020])
     m_body_param            = 10;   % kg
     m_wheel_param           = 1;    % kg
-    g_param                 = -9.8; % m/s2
+    g_param                 = 9.8; % m/s2
     r1_param                = 0.1;  % m
     r2_param                = 0.15; % m
     l_originToBodyCM_param  = 0.4;  % m
