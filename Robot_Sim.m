@@ -10,14 +10,14 @@ torque=[];
 ee_pos = [];
 eepos_error = [];
 % Parameters
-tf = 10;
+tf = 1.0;
 
 % Get the M C and G matricies
 [M,C,G] = getDynamicModel();
 
 % Get Initial Joint Vairables
 % q1 q2 q1d q2d
-X0 = [-0.3, 0, 0, 0];
+X0 = [deg2rad(15), 0, 0, 0];
 
 % ODE45
 [T,X] = ode45(@(t,x)RobotModel(t,x,M,C,G),[0 tf],X0);
@@ -81,7 +81,7 @@ reaction_wheel_radius = 0.15;
         % open the video writer
         open(writerObj);
         % write the frames to the video
-        for i=1:length(F)
+        for i=1:length(F)-1
             % convert the image to a frame
             frame = F(i) ;    
             writeVideo(writerObj, frame);
@@ -167,12 +167,13 @@ function tau = PDplusFeedforward(theta_d, dtheta_d, ddtheta_d, theta, dtheta, Mm
      
      % Controller output torque
      tau = double((Kp*e + Kv*de) + Cmatd.*dtheta_d + Mmatd*ddtheta_d);
-end
-
-% This function takes the desired q1 torque from the PDplusFeedforward
-% control law and calculates what torque needs to be applied to the
-% reaction 
-function reactionWheelControlLaw()
+     
+     % Take desired q1 torque and calculate what q2 torque is needed to get it
+     
+     % Output new torque
+     % These need to be actually calculated
+     tau(1) = 0;
+     tau(2) = 100;
 end
 
 % Updated
