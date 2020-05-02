@@ -10,15 +10,88 @@ torque=[];
 ee_pos = [];
 eepos_error = [];
 % Parameters
-tf = 15;
+tf = 0.5;
 
 % Get the M C and G matricies
 [M,C,G] = getDynamicModel();
 
 % Get Initial Joint Vairables
-X0 = [-0.1, 0, 0, 0];
+% q1 q2 q1d q2d
+X0 = [-0.3, 0, 0, 0];
+
 % ODE45
 [T,X] = ode45(@(t,x)RobotModel(t,x,M,C,G),[0 tf],X0);
+
+showRobot(T,X,1)
+showStateVariables(T,X)
+
+function showStateVariables(T,X)
+        x = T;
+        
+
+        % Plot the robot body
+        hold on
+        subplot(2,2,1)
+        plot(x,X(:,1))
+        title('Position q1 (body angle)')
+
+        subplot(2,2,2)
+        plot(x,X(:,2))
+        title('Position q2 (reaction wheel angle)')
+
+        subplot(2,2,3)
+        plot(x,X(:,3))
+        title('Velocity q1 (change in body angle)')
+
+        subplot(2,2,4)
+        plot(x,X(:,4))
+        title('Velocity q2 (change in reaction wheel angle)')
+        hold off
+end
+
+function showRobot(T,X,record_movie)
+reaction_wheel_radius = 0.15;
+
+    for i = 1:length(T)
+        % Create the figure and show as image
+        figure(1);
+        
+        % Get the ee position base
+        ee = forKin(X(i,1),X(i,2));
+        
+        % Plot the robot body
+        hold on
+        title(['Robot at time:', num2str(T(i))]) 
+        plot([0, ee(1)], [0, ee(2)]);
+        % Plot the reaction wheel position
+        plot(ee(1),ee(2),'o', 'MarkerSize', 20);
+        plot([ee(1), ee(1) - reaction_wheel_radius*sin(X(i,2))], [ee(2), ee(2) - reaction_wheel_radius*cos(X(i,2))], 'r');
+        xlim([-1, 1]);
+        ylim([0, 1]);
+        hold off
+        
+        F(i) = getframe(gcf);
+        clf('reset');
+    end
+    
+    if record_movie == 1
+        % create the video writer with 1 fps
+      writerObj = VideoWriter('Robot_Motion.avi');
+      writerObj.FrameRate = 10;
+      % set the seconds per image
+        % open the video writer
+        open(writerObj);
+        % write the frames to the video
+        for i=1:length(F)
+            % convert the image to a frame
+            frame = F(i) ;    
+            writeVideo(writerObj, frame);
+        end
+        % close the writer object
+        close(writerObj)    
+    end
+    
+end
 
 function dx = RobotModel(t,x,M,C,G)
 
@@ -34,7 +107,7 @@ q2_des = 0; % shouldn't be relevant
 theta_d = [q1_des; q2_des];
 
 % Desired Velocity
-dtheta_d = [0; 0];
+dtheta_d = [0;0];
 
 % Desired Acceleration
 ddtheta_d = [0;0];
@@ -75,12 +148,16 @@ dx = zeros(4,1);
 dx(1) = x(3); % dq1 
 dx(2) = x(4); % dq2
 dx(3:4) = -invMc .* x(3:4) + invM * tau;
+disp(t)
 end
 
+% Control law for our robot
 function tau = PDplusFeedforward(theta_d, dtheta_d, ddtheta_d, theta, dtheta, Mmatd, Cmatd)
      % Gain Matricies
-     Kp = 100*eye(2);
-     Kv = 10*eye(2);
+     Kp = [100 0;
+           0 100];
+     Kv = [10 0;
+           0 10];
      
      % position error
      e = theta_d - theta;
@@ -90,6 +167,7 @@ function tau = PDplusFeedforward(theta_d, dtheta_d, ddtheta_d, theta, dtheta, Mm
      
      % Controller output torque
      tau = double((Kp*e + Kv*de) + Cmatd.*dtheta_d + Mmatd*ddtheta_d);
+     tau(2) = 10;
 end
 
 % Updated
@@ -112,8 +190,8 @@ l_originToWheelCM_param = 0.4;  % m
 
 full_body_length = l_originToBodyCM_param + l_originToWheelCM_param;
 
-x = full_body_length * cos(q1);
-y = full_body_length * sin(q1);
+x = full_body_length * sin(q1);
+y = full_body_length * cos(q1);
 
 ee = [x;y];
 end
@@ -124,11 +202,14 @@ function [M, C, G] = dynamicModelResults(x,M,C,G)
     joint_vars = [q1 q2 dq1 dq2];
     
     % Sub in the joint values from the current state
-    for i = 1:length(joint_vars)
-        M = subs(M, joint_vars(i), x(i));
-        C = subs(C, joint_vars(i), x(i));
-        G = subs(G, joint_vars(i), x(i));
-    end  
+%     for i = 1:length(joint_vars)
+%         M = subs(M, joint_vars(i), x(i));
+%         C = subs(C, joint_vars(i), x(i));
+%         G = subs(G, joint_vars(i), x(i));
+%     end  
+
+        C = subs(C, joint_vars(1), x(1));
+        G = subs(G, joint_vars(1), x(1));
 end
 
 function [M, C, G] = getDynamicModel()
