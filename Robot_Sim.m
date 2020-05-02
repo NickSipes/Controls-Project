@@ -10,7 +10,7 @@ torque=[];
 ee_pos = [];
 eepos_error = [];
 % Parameters
-tf = 0.5;
+tf = 0.311;
 
 % Get the M C and G matricies
 [M,C,G] = getDynamicModel();
@@ -28,7 +28,6 @@ showStateVariables(T,X)
 function showStateVariables(T,X)
         x = T;
         
-
         % Plot the robot body
         hold on
         subplot(2,2,1)
@@ -67,7 +66,7 @@ reaction_wheel_radius = 0.15;
         plot(ee(1),ee(2),'o', 'MarkerSize', 20);
         plot([ee(1), ee(1) - reaction_wheel_radius*sin(X(i,2))], [ee(2), ee(2) - reaction_wheel_radius*cos(X(i,2))], 'r');
         xlim([-1, 1]);
-        ylim([0, 1]);
+        ylim([-1, 1]);
         hold off
         
         F(i) = getframe(gcf);
@@ -139,7 +138,7 @@ invMc = invM*C;
 xd = [q1_des; q2_des; 0; 0];
 [Md, Cd, Gd] = dynamicModelResults(xd,M,C,G);
 tau = PDplusFeedforward(theta_d, dtheta_d, ddtheta_d, current_thetas,...
-                        current_vel, Md, Cd);
+                        current_vel, Md, Cd, Gd);
 % Record Data
 torque = [torque tau];
 
@@ -152,12 +151,12 @@ disp(t)
 end
 
 % Control law for our robot
-function tau = PDplusFeedforward(theta_d, dtheta_d, ddtheta_d, theta, dtheta, Mmatd, Cmatd)
+function tau = PDplusFeedforward(theta_d, dtheta_d, ddtheta_d, theta, dtheta, Mmatd, Cmatd, Gmatd)
      % Gain Matricies
-     Kp = [100 0;
-           0 100];
-     Kv = [10 0;
-           0 10];
+     Kp = [0 0;
+           0 0];
+     Kv = [0 0;
+           0 0];
      
      % position error
      e = theta_d - theta;
@@ -166,8 +165,7 @@ function tau = PDplusFeedforward(theta_d, dtheta_d, ddtheta_d, theta, dtheta, Mm
      de = dtheta_d - dtheta;
      
      % Controller output torque
-     tau = double((Kp*e + Kv*de) + Cmatd.*dtheta_d + Mmatd*ddtheta_d);
-     tau(2) = 10;
+     tau = double((Kp*e + Kv*de) + Cmatd.*dtheta_d + Mmatd*ddtheta_d - Gmatd.*theta);
 end
 
 % Updated
