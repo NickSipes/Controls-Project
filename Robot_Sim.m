@@ -10,7 +10,7 @@ torque=[];
 ee_pos = [];
 eepos_error = [];
 % Parameters
-tf = 1.0;
+tf = 15.0;
 
 % Get the M C and G matricies
 [M,C,G] = getDynamicModel();
@@ -31,11 +31,11 @@ function showStateVariables(T,X)
         % Plot the robot body
         hold on
         subplot(2,2,1)
-        plot(x,X(:,1))
+        plot(x,rad2deg(sin(X(:,1))))
         title('Position q1 (body angle)')
 
         subplot(2,2,2)
-        plot(x,X(:,2))
+        plot(x,rad2deg(sin(X(:,2))))
         title('Position q2 (reaction wheel angle)')
 
         subplot(2,2,3)
@@ -172,8 +172,8 @@ function tau = PDplusFeedforward(theta_d, dtheta_d, ddtheta_d, theta, dtheta, Mm
      
      % Output new torque
      % These need to be actually calculated
+     tau(2) = -tau(1);
      tau(1) = 0;
-     tau(2) = 100;
 end
 
 % Updated
@@ -310,8 +310,8 @@ function [M,C,G] = getRobotParams(M,C,G)
     m_body_param            = 10;   % kg
     m_wheel_param           = 1;    % kg
     g_param                 = 9.8; % m/s2
-    r1_param                = 0.1;  % m
-    r2_param                = 0.15; % m
+    r1_param                = 0.4;  % m
+    r2_param                = 0.5; % m
     l_originToBodyCM_param  = 0.4;  % m
     l_originToWheelCM_param = 0.4;  % m
     I_Body_param            = m_wheel_param * l_originToBodyCM_param^2;
