@@ -6,11 +6,13 @@ clear all
 global torque;
 global ee_pos;
 global eepos_error;
+global IC;
+global tf;
 torque=[];
 ee_pos = [];
 eepos_error = [];
 % Parameters
-tf = 15.0;
+tf = 0.01;
 
 % Get the M C and G matricies
 [M,C,G] = getDynamicModel();
@@ -18,6 +20,7 @@ tf = 15.0;
 % Get Initial Joint Vairables
 % q1 q2 q1d q2d
 X0 = [deg2rad(15), 0, 0, 0];
+IC = X0;
 
 % ODE45
 [T,X] = ode45(@(t,x)RobotModel(t,x,M,C,G),[0 tf],X0);
@@ -25,27 +28,75 @@ X0 = [deg2rad(15), 0, 0, 0];
 showRobot(T,X,1)
 showStateVariables(T,X)
 
+function title = buildTitleString()
+    global setpoint;
+    global IC;
+    global tf;
+    
+    setpoint_str = 'Setpoint =';
+    IC_str = 'IC =';
+    for i = 1:length(setpoint)
+        if i <= 2
+            setpoint_str = strcat(" ",setpoint_str, num2str(rad2deg(setpoint(i))), ' Deg | '); 
+            IC_str = strcat(' ',IC_str, num2str(rad2deg(IC(i))), ' Deg | '); 
+        elseif i == 3
+            setpoint_str = strcat(' ',setpoint_str, num2str(rad2deg(setpoint(i))), ' Deg/s | '); 
+            IC_str = strcat(' ',IC_str, num2str(rad2deg(IC(i))), ' Deg/s | '); 
+        elseif i == 4
+            setpoint_str = strcat(' ',setpoint_str, num2str(rad2deg(setpoint(i))), ' Deg/s'); 
+            IC_str = strcat(' ',IC_str, num2str(rad2deg(IC(i))), ' Deg/s'); 
+        end
+    end
+
+    title = {['System State Variables for ', num2str(tf), ' seconds'],IC_str, setpoint_str}; 
+
+
+end
+
 function showStateVariables(T,X)
-        x = T;
-        
-        % Plot the robot body
-        hold on
-        subplot(2,2,1)
-        plot(x,rad2deg(sin(X(:,1))))
-        title('Position q1 (body angle)')
+    global setpoint;
+    global IC;
+    global tf;
+    
+    title_fontsize = 24;
+    subplot_fontsize = 18;
+    axis_fontsize = 14;
+    
+    x = T;
+    time_label = 'Time [s]';
+    linewidth = 4;
 
-        subplot(2,2,2)
-        plot(x,rad2deg(sin(X(:,2))))
-        title('Position q2 (reaction wheel angle)')
+    % Figure for the subplots
+    sgtitle(buildTitleString(), 'FontSize', title_fontsize); 
 
-        subplot(2,2,3)
-        plot(x,X(:,3))
-        title('Velocity q1 (change in body angle)')
+    % Plot the robot body
+    hold on
+    subplot(2,2,1)
+    plot(x,rad2deg(sin(X(:,1))), 'LineWidth', linewidth)
+    title('Position q1 (body angle)', 'FontSize', subplot_fontsize)
+    xlabel(time_label, 'FontSize', axis_fontsize);
+    ylabel('Degrees', 'FontSize', axis_fontsize)
 
-        subplot(2,2,4)
-        plot(x,X(:,4))
-        title('Velocity q2 (change in reaction wheel angle)')
-        hold off
+    subplot(2,2,2)
+    plot(x,rad2deg(sin(X(:,2))), 'LineWidth', linewidth)
+    ylim([-360,360]);
+    title('Position q2 (reaction wheel angle)', 'FontSize', subplot_fontsize)
+    xlabel(time_label, 'FontSize', axis_fontsize);
+    ylabel('Degrees', 'FontSize', axis_fontsize)
+
+    subplot(2,2,3)
+    plot(x,rad2deg(sin(X(:,3))), 'LineWidth', linewidth)
+    title('Velocity q1 (change in body angle)', 'FontSize', subplot_fontsize)
+    xlabel(time_label, 'FontSize', axis_fontsize);
+    ylabel('Degrees per second', 'FontSize', axis_fontsize)
+
+    subplot(2,2,4)
+    plot(x,rad2deg(sin(X(:,4))), 'LineWidth', linewidth)
+    title('Velocity q2 (change in reaction wheel angle)', 'FontSize', subplot_fontsize)
+    ylim([-360,360]);
+    xlabel(time_label, 'FontSize', axis_fontsize);
+    ylabel('Degrees per second', 'FontSize', axis_fontsize)
+    hold off
 end
 
 function showRobot(T,X,record_movie)
@@ -97,9 +148,10 @@ function dx = RobotModel(t,x,M,C,G)
 global torque;
 global ee_pos;
 global eepos_error;
+global setpoint;
 
 % Desired Joint Values at endpoint
-q1_des = 0;
+q1_des = deg2rad(0);
 q2_des = 0; % shouldn't be relevant
 
 % Desired Set-Point Position
@@ -107,6 +159,9 @@ theta_d = [q1_des; q2_des];
 
 % Desired Velocity
 dtheta_d = [0;0];
+
+% Desired setpoint in state vars
+setpoint = [theta_d; dtheta_d];
 
 % Desired Acceleration
 ddtheta_d = [0;0];
@@ -122,7 +177,8 @@ ee_d = forKin(q1_des, q2_des);
 ee = forKin(current_thetas(1), current_thetas(2));
 
 % Position Error
-ee_error = [ee_d(1)-ee(1); ee_d(2)-ee(2)];
+ee(2) = rad2deg(sin(x(4,1)))/360;
+ee_error = ([ee_d(1)-ee(1); ee_d(2)-ee(2)]);
 
 % Record Data
 ee_pos = [ee_pos ee];
@@ -156,7 +212,7 @@ function tau = PDplusFeedforward(theta_d, dtheta_d, ddtheta_d, theta, dtheta, Mm
      % Gain Matricies
      Kp = [100 0;
            0 0];
-     Kv = [10 0;
+     Kv = [25 0;
            0 0];
      
      % position error
@@ -172,8 +228,8 @@ function tau = PDplusFeedforward(theta_d, dtheta_d, ddtheta_d, theta, dtheta, Mm
      
      % Output new torque
      % These need to be actually calculated
-     tau(2) = -tau(1);
-     tau(1) = 0;
+    tau(2) = -tau(1);
+    tau(1) = 0;
 end
 
 % Updated
@@ -314,7 +370,7 @@ function [M,C,G] = getRobotParams(M,C,G)
     r2_param                = 0.5; % m
     l_originToBodyCM_param  = 0.4;  % m
     l_originToWheelCM_param = 0.4;  % m
-    I_Body_param            = m_wheel_param * l_originToBodyCM_param^2;
+    I_Body_param            = m_body_param * l_originToBodyCM_param^2 + m_wheel_param * l_originToWheelCM_param^2 ;
     I_WheelRotation_param   =  0.5 * m_wheel_param * (r1_param^2 + r2_param^2);
     
     params = [m_body_param m_wheel_param g_param...
