@@ -8,18 +8,20 @@ global ee_pos;
 global eepos_error;
 global IC;
 global tf;
+global time;
+time = [];
 torque=[];
 ee_pos = [];
 eepos_error = [];
 % Parameters
-tf = 0.01;
+tf = 10.0;
 
 % Get the M C and G matricies
 [M,C,G] = getDynamicModel();
 
 % Get Initial Joint Vairables
 % q1 q2 q1d q2d
-X0 = [deg2rad(15), 0, 0, 0];
+X0 = [deg2rad(-30), 0, 0, 0];
 IC = X0;
 
 % ODE45
@@ -54,9 +56,8 @@ function title = buildTitleString()
 end
 
 function showStateVariables(T,X)
-    global setpoint;
-    global IC;
-    global tf;
+    global torque
+    global time
     
     title_fontsize = 24;
     subplot_fontsize = 18;
@@ -97,6 +98,13 @@ function showStateVariables(T,X)
     xlabel(time_label, 'FontSize', axis_fontsize);
     ylabel('Degrees per second', 'FontSize', axis_fontsize)
     hold off
+    
+    % Plot the Joint Torques
+    figure();
+    plot(time, torque(2,:),'LineWidth', linewidth);
+    title('Reaction Wheel Joint Torque', 'FontSize', subplot_fontsize)
+    xlabel(time_label, 'FontSize', axis_fontsize);
+    ylabel('Torque [Nm]', 'FontSize', axis_fontsize)
 end
 
 function showRobot(T,X,record_movie)
@@ -145,13 +153,16 @@ end
 
 function dx = RobotModel(t,x,M,C,G)
 
+global time;
 global torque;
 global ee_pos;
 global eepos_error;
 global setpoint;
 
+time= [time t];
+
 % Desired Joint Values at endpoint
-q1_des = deg2rad(0);
+q1_des = 0; %This is the edge of controllability -> deg2rad(17.18);
 q2_des = 0; % shouldn't be relevant
 
 % Desired Set-Point Position
@@ -212,7 +223,7 @@ function tau = PDplusFeedforward(theta_d, dtheta_d, ddtheta_d, theta, dtheta, Mm
      % Gain Matricies
      Kp = [100 0;
            0 0];
-     Kv = [25 0;
+     Kv = [50 0;
            0 0];
      
      % position error
